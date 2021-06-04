@@ -10,3 +10,4 @@ edition = "2018"
 chrono = "*"
 structopt = "*"
 serde_json = "*"
+serde = { version = "*", features = ["derive"] }
