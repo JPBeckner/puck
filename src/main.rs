@@ -25,6 +25,7 @@ enum PuckCli {
         #[structopt(
             name = "date",
             long = "--date",
+            short = "-d",
             about = "date to register in",
             required = false,
             default_value = ""
@@ -32,7 +33,6 @@ enum PuckCli {
         date: String,
     },
 
-    // time to register
     #[structopt(name = "balance", about = "Balance of hours")]
     Balance {
         #[structopt(name = "year")]
@@ -44,35 +44,49 @@ enum PuckCli {
     },
     #[structopt(name = "user", about = "User :0")]
     User {
-        #[structopt(name = "new", about = "Register new user")]
+        #[structopt(
+            name = "new",
+            about = "Register a new user",
+            long = "new",
+            required = false,
+            default_value = "",
+        )]
         new: String,
 
         #[structopt(
-            name = "refresh",
-            about = "Refresh the user data.",
-            long = "--clear",
-            required = false,
-            default_value = "false",
+            name = "delete",
+            about = "Delete the user data.",
+            short = "-d",
+            long = "--delete"
         )]
-        clear: String,
-        // #[structopt(name = "default", about = "Set default user")]
-        // default: String,
+        delete: bool,
     },
 }
 
 fn main() {
-    let b = false;
+    let mut puck = Puck;
     match PuckCli::from_args() {
         PuckCli::Punch { io, hour, date } => {
-            let mut puck = Puck;
+            
             puck.register(io, hour, date);
         },
         PuckCli::Balance { year, month, day } => {
-            println!("balance");
+            println!("balance for year: {:?}, month: {:?}, and a day: {:?}", year, month, day);
         },
-        PuckCli::User { new, clear } => {
-            println!("user");
+        PuckCli::User { new, delete } => {
+            if delete {
+                puck.clear_user();
+                return
+            }
+            println!("new user: {:?}", new);
+            if !new.is_empty() {
+                puck.set_user(new);
+                return
+            }
+            println!("new is empty");
+
+            println!("Curent user: {:?}", puck.get_user().unwrap());
         },
-        _ => ()
+        // _ => ()  // should handle that?
     }
 }
