@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use std::iter::{IntoIterator, Iterator};
-use chrono::{Datelike, Timelike, Utc, DateTime, NaiveTime, NaiveDateTime, NaiveDate, Local};
+use chrono::{Datelike, Timelike, Local};
 use serde::{Deserialize, Serialize};
 use serde_json;
 
@@ -33,8 +32,37 @@ impl Puck {
         }
         data.registers.entry(date.clone()).or_insert(HashMap::new()).entry(hour).or_insert(io);
 
-        println!("Teste: {:?}", data.registers);
-        data.save();
+        println!("Full data to register: {:?}", data.registers);
+        data.save().expect("Can't save the file.");
+    }
+
+    pub fn get_user(&mut self) -> Result<String, std::io::Error> {
+        match UserData::new() {
+            Ok(data) => {
+                let user = data.user;
+                Ok(user)
+            }
+            _ => {
+                panic!("Can't get the current user.");
+            }
+        }
+    }
+
+    pub fn set_user(&mut self, new: String) {
+        println!("Puck is registring a new user or cleaning the actual user data.");
+        let mut data = UserData::new().expect("Erro");
+        
+        data.user = new;
+        data.save().expect("Can't save the file.");
+
+    }
+
+    pub fn clear_user(&mut self) {
+        let mut data = UserData::new().expect("Error");
+        data.user.clear();
+        data.registers.clear();
+        println!("cleared registers: {:?}", data.registers);
+        data.save().expect("Can't clear the registers");
     }
 
 }
@@ -47,12 +75,12 @@ struct UserData {
 
 impl UserData {
     fn new() -> Result<UserData, std::io::Error> {
-        // open db.json
+        // open redorded data file, or create one if there is no file yet
         let file = std::fs::OpenOptions::new()
             .write(true)
             .create(true)
             .read(true)
-            .open(".db.json")?;
+            .open(".record_storage.json")?;
 
         let full_data: UserData = serde_json::from_reader(file).unwrap();
         Ok(full_data)
@@ -60,16 +88,16 @@ impl UserData {
     }
 
     fn save(&mut self) -> Result<(), std::io::Error> {
-        // -> Result<UserData, std::io::Error>
         println!("Writing on file.");
         let file = std::fs::OpenOptions::new()
             .write(true)
-            .create(true)
-            .open(".db.json")?;
+            .truncate(true)
+            .open(".record_storage.json")?;
+        
         // write to file with actual data.
-        serde_json::to_writer_pretty(file, &self);
-        
-        Ok(())
-        
+        match serde_json::to_writer_pretty(file, &self) {
+            Ok(()) => { Ok(()) },
+            _ => { panic!("Can save file."); }
+        }        
     }
 }
